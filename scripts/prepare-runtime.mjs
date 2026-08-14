@@ -47,7 +47,7 @@ function workspacePackageDirs() {
 }
 
 function workspaceFilterArgs() {
-  return ['./vendor/*', './packages/*/*', './apps/cli']
+  return ['@deepseek-ai/*']
     .flatMap(pattern => ['--filter', pattern])
 }
 
