@@ -6,7 +6,7 @@ on:
       upstream_ref:
         description: Upstream deepseek-harness ref to package
         required: true
-        default: main
+        default: master
         type: string
       build_number:
         description: Optional build suffix; defaults to the GitHub Actions run number
@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: deepseek-ai/deepseek-harness
-          ref: ${{ inputs.upstream_ref || 'main' }}
+          ref: ${{ inputs.upstream_ref || 'master' }}
           path: deepseek-harness
           persist-credentials: false
 
@@ -105,7 +105,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: deepseek-ai/deepseek-harness
-          ref: ${{ inputs.upstream_ref || 'main' }}
+          ref: ${{ inputs.upstream_ref || 'master' }}
           path: deepseek-harness
           persist-credentials: false
 

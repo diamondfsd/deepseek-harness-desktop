@@ -8,7 +8,7 @@
 
 - [DeepSeek Harness 主仓库](https://github.com/deepseek-ai/deepseek-harness)
 - [DeepSeek Harness Releases](https://github.com/deepseek-ai/deepseek-harness/releases)
-- [官方文档](https://github.com/deepseek-ai/deepseek-harness/tree/main/docs)
+- [官方文档](https://github.com/deepseek-ai/deepseek-harness/tree/master/docs)
 - [问题反馈](https://github.com/deepseek-ai/deepseek-harness/issues)
 - [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions)
 - [DeepSeek 官网](https://www.deepseek.com/)
@@ -65,7 +65,7 @@ Windows 和 Linux 请分别执行 `pnpm run package:win` 或 `pnpm run package:l
 
 也可以在 GitHub 的 Actions 页面手动运行工作流：
 
-1. `upstream_ref` 填写主仓库分支或标签，默认是 `main`。
+1. `upstream_ref` 填写主仓库分支或标签，默认是 `master`。
 2. `build_number` 可选；不填写时同样使用 GitHub Actions 运行序号。
 
 也可以直接推送 `v*` 标签触发发布，例如 `v0.1.0-rc.5-build.1`。这种方式会使用标签本身作为安装包版本。
@@ -105,7 +105,7 @@ pnpm run sync
 
 ## 许可
 
-DeepSeek Harness 由 DeepSeek 开发，使用 [MIT License](https://github.com/deepseek-ai/deepseek-harness/blob/main/LICENSE) 发布。本项目打包并分发 DeepSeek Harness 运行时，随项目保留上游 MIT 许可声明，完整文本见 [LICENSE](LICENSE)。第三方依赖的许可信息以主仓库的 [THIRD_PARTY_NOTICES.md](https://github.com/deepseek-ai/deepseek-harness/blob/main/THIRD_PARTY_NOTICES.md) 为准。
+DeepSeek Harness 由 DeepSeek 开发，使用 [MIT License](https://github.com/deepseek-ai/deepseek-harness/blob/master/LICENSE) 发布。本项目打包并分发 DeepSeek Harness 运行时，随项目保留上游 MIT 许可声明，完整文本见 [LICENSE](LICENSE)。第三方依赖的许可信息以主仓库的 [THIRD_PARTY_NOTICES.md](https://github.com/deepseek-ai/deepseek-harness/blob/master/THIRD_PARTY_NOTICES.md) 为准。
 
 ## 免责声明
 
