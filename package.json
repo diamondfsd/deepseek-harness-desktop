@@ -1,0 +1,82 @@
+{
+  "name": "deepseek-harness-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop wrapper for the DeepSeek Harness Web application.",
+  "type": "module",
+  "main": "out/main/index.js",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm run prepare:runtime && electron-vite dev",
+    "build": "pnpm run prepare:runtime && electron-vite build",
+    "generate:icon": "node scripts/generate-icon.mjs",
+    "package": "pnpm run generate:icon && pnpm run build && electron-builder",
+    "package:dir": "pnpm run generate:icon && pnpm run build && electron-builder --dir",
+    "package:mac": "pnpm run generate:icon && pnpm run build && electron-builder --mac",
+    "package:win": "pnpm run generate:icon && pnpm run build && electron-builder --win",
+    "package:linux": "pnpm run generate:icon && pnpm run build && electron-builder --linux",
+    "prepare:runtime": "node scripts/prepare-runtime.mjs",
+    "sync": "node scripts/sync-upstream.mjs",
+    "update": "node scripts/update-upstream.mjs"
+  },
+  "build": {
+    "appId": "ai.deepseek.harness.desktop",
+    "productName": "DeepSeek Harness",
+    "asar": true,
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime",
+        "to": "runtime",
+        "filter": [
+          "!node_modules{,/**/*}"
+        ]
+      },
+      {
+        "from": "runtime/node_modules",
+        "to": "runtime/node_modules",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "category": "Development",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "icon": "build/icon.png",
+    "directories": {
+      "output": "release"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "electron": "43.4.0",
+    "electron-builder": "26.15.3",
+    "electron-vite": "5.0.0",
+    "typescript": "^7.0.2",
+    "vite": "7.3.6"
+  }
+}
