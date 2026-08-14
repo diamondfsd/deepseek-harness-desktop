@@ -57,6 +57,19 @@ Windows 和 Linux 请分别执行 `pnpm run package:win` 或 `pnpm run package:l
 
 打包前会从主仓库构建运行时，并将运行时依赖一起放入安装包。因此最终用户不需要安装 Node.js、pnpm，也不需要打开终端执行命令。
 
+## GitHub Actions 发布
+
+仓库中的 `Release Desktop App` 工作流会从 DeepSeek Harness 主仓库读取 `apps/cli/package.json` 的版本，并分别构建 Windows x64、macOS Intel 和 macOS Apple Silicon 安装包，最后创建一个 GitHub Release。
+
+推荐在 GitHub 的 Actions 页面手动运行工作流：
+
+1. `upstream_ref` 填写主仓库分支或标签，默认是 `main`。
+2. `build_number` 填写当前主版本下的构建序号，例如 `1`。
+
+例如上游版本为 `0.1.0-rc.5` 且构建序号为 `1` 时，Release 版本和标签为 `0.1.0-rc.5-build.1` / `v0.1.0-rc.5-build.1`。同一个上游版本再次发布时递增 `build_number`。
+
+也可以直接推送 `v*` 标签触发发布，例如 `v0.1.0-rc.5-build.1`。这种方式会使用标签本身作为安装包版本。
+
 ## Listen 和数据目录
 
 桌面应用启动时会在本机启动 DeepSeek Harness Web 服务。服务固定绑定到 `127.0.0.1`，端口使用 `0` 由操作系统自动分配，每次启动端口可能不同；Electron 会自动连接该服务，用户不需要手动访问端口。

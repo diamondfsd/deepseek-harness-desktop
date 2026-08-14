@@ -1,0 +1,172 @@
+name: Release Desktop App
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: Upstream deepseek-harness ref to package
+        required: true
+        default: main
+        type: string
+      build_number:
+        description: Build suffix appended as build.N
+        required: true
+        default: '1'
+        type: string
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: 22.12.0
+  PNPM_VERSION: 11.7.0
+
+jobs:
+  version:
+    name: Resolve release version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      upstream_version: ${{ steps.version.outputs.upstream_version }}
+    steps:
+      - name: Check out upstream
+        uses: actions/checkout@v4
+        with:
+          repository: deepseek-ai/deepseek-harness
+          ref: ${{ inputs.upstream_ref || 'main' }}
+          path: deepseek-harness
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        env:
+          TAG_NAME: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          BUILD_NUMBER: ${{ inputs.build_number || '1' }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "$TAG_NAME" ]]; then
+            version="${TAG_NAME#v}"
+            upstream_version="tag"
+          else
+            if ! [[ "$BUILD_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+              echo "build_number must be a positive integer" >&2
+              exit 1
+            fi
+            upstream_version="$(node -p "JSON.parse(require('fs').readFileSync('deepseek-harness/apps/cli/package.json', 'utf8')).version")"
+            version="${upstream_version}-build.${BUILD_NUMBER}"
+          fi
+
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Resolved version is not a valid semver: $version" >&2
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "upstream_version=$upstream_version" >> "$GITHUB_OUTPUT"
+          echo "Packaging version $version"
+
+  package:
+    name: Package ${{ matrix.platform }}
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-x64
+            runner: windows-latest
+            electron_builder_args: --win --x64
+          - platform: macos-x64
+            runner: macos-13
+            electron_builder_args: --mac --x64
+          - platform: macos-arm64
+            runner: macos-14
+            electron_builder_args: --mac --arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out desktop project
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check out upstream
+        uses: actions/checkout@v4
+        with:
+          repository: deepseek-ai/deepseek-harness
+          ref: ${{ inputs.upstream_ref || 'main' }}
+          path: deepseek-harness
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install desktop dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        env:
+          DSH_REPO: ${{ github.workspace }}/deepseek-harness
+        run: pnpm run build
+
+      - name: Build installer
+        run: pnpm exec electron-builder --publish never --config.extraMetadata.version=${{ needs.version.outputs.version }} ${{ matrix.electron_builder_args }}
+
+      - name: Upload installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.blockmap
+            release/*.yml
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Publish GitHub Release
+    needs:
+      - version
+      - package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download installers
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ needs.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: DeepSeek Harness Desktop ${{ needs.version.outputs.version }}
+          generate_release_notes: true
+          prerelease: ${{ contains(needs.version.outputs.version, '-') }}
+          files: release-artifacts/*
