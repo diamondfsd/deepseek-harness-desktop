@@ -61,12 +61,12 @@ Windows 和 Linux 请分别执行 `pnpm run package:win` 或 `pnpm run package:l
 
 仓库中的 `Release Desktop App` 工作流会从 DeepSeek Harness 主仓库读取 `apps/cli/package.json` 的版本，并分别构建 Windows x64、macOS Intel 和 macOS Apple Silicon 安装包，最后创建一个 GitHub Release。
 
-推荐在 GitHub 的 Actions 页面手动运行工作流：
+推送到 `main` 分支会自动运行工作流，并使用 GitHub Actions 的运行序号作为 `build.n`。例如上游版本为 `0.1.0-rc.5`，第 `3` 次运行会生成 `0.1.0-rc.5-build.3` / `v0.1.0-rc.5-build.3`。
+
+也可以在 GitHub 的 Actions 页面手动运行工作流：
 
 1. `upstream_ref` 填写主仓库分支或标签，默认是 `main`。
-2. `build_number` 填写当前主版本下的构建序号，例如 `1`。
-
-例如上游版本为 `0.1.0-rc.5` 且构建序号为 `1` 时，Release 版本和标签为 `0.1.0-rc.5-build.1` / `v0.1.0-rc.5-build.1`。同一个上游版本再次发布时递增 `build_number`。
+2. `build_number` 可选；不填写时同样使用 GitHub Actions 运行序号。
 
 也可以直接推送 `v*` 标签触发发布，例如 `v0.1.0-rc.5-build.1`。这种方式会使用标签本身作为安装包版本。
 

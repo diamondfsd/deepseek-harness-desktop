@@ -9,11 +9,12 @@ on:
         default: main
         type: string
       build_number:
-        description: Build suffix appended as build.N
-        required: true
-        default: '1'
+        description: Optional build suffix; defaults to the GitHub Actions run number
+        required: false
         type: string
   push:
+    branches:
+      - main
     tags:
       - 'v*'
 
@@ -51,7 +52,7 @@ jobs:
         shell: bash
         env:
           TAG_NAME: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
-          BUILD_NUMBER: ${{ inputs.build_number || '1' }}
+          BUILD_NUMBER: ${{ inputs.build_number || github.run_number }}
         run: |
           set -euo pipefail
 
