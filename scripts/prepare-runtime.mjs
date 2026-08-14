@@ -10,7 +10,12 @@ const upstreamTsdownConfig = join(projectRoot, 'scripts', 'upstream-tsdown.confi
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 
 function run(command, args, cwd, env = process.env) {
-  const result = spawnSync(command, args, { cwd, env, stdio: 'inherit' })
+  const result = spawnSync(command, args, {
+    cwd,
+    env,
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  })
   if (result.error !== undefined) throw result.error
   if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} exited with ${String(result.status)}`)
 }
