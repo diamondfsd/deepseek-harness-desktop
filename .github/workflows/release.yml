@@ -89,10 +89,10 @@ jobs:
             runner: windows-latest
             electron_builder_args: --win --x64
           - platform: macos-x64
-            runner: macos-13
+            runner: macos-15-intel
             electron_builder_args: --mac --x64
           - platform: macos-arm64
-            runner: macos-14
+            runner: macos-15
             electron_builder_args: --mac --arm64
     runs-on: ${{ matrix.runner }}
     steps:
