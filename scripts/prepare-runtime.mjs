@@ -47,10 +47,8 @@ function workspacePackageDirs() {
 }
 
 function workspaceFilterArgs() {
-  const names = workspacePackageDirs()
-    .filter(dir => existsSync(join(dir, 'package.json')))
-    .map(dir => JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).name)
-  return names.flatMap(name => ['--filter', name])
+  return ['./vendor/*', './packages/*/*', './apps/cli']
+    .flatMap(pattern => ['--filter', pattern])
 }
 
 assertUpstream()
