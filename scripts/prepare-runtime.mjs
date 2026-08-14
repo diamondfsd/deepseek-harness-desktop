@@ -47,8 +47,7 @@ function workspacePackageDirs() {
 }
 
 function workspaceFilterArgs() {
-  return ['@deepseek-ai/*']
-    .flatMap(pattern => ['--filter', pattern])
+  return []
 }
 
 assertUpstream()
