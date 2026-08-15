@@ -47,12 +47,17 @@ function workspacePackageDirs() {
 }
 
 function workspaceFilterArgs() {
-  return []
+  return workspacePackageDirs().flatMap(dir => {
+    const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
+    return typeof manifest.name === 'string' ? ['--filter', manifest.name] : []
+  })
 }
 
 assertUpstream()
 console.log(`desktop: building upstream ${upstreamRoot}`)
-run(pnpm, ['install', '--frozen-lockfile'], upstreamRoot)
+// Keep optional native packages for every target platform because one runtime
+// tree is reused to produce the macOS, Windows, and Linux installers.
+run(pnpm, ['install', '--frozen-lockfile', '--force'], upstreamRoot)
 const buildEnvironment = { ...process.env, DSH_REPO: upstreamRoot }
 const filters = workspaceFilterArgs()
 run(pnpm, ['exec', 'tsc', '-b', 'tsconfig.host.json'], upstreamRoot)
@@ -83,7 +88,7 @@ run(pnpm, ['--filter', '@deepseek-ai/dsh-web-frontend', 'run', 'build'], upstrea
 
 rmSync(runtimeRoot, { recursive: true, force: true })
 mkdirSync(runtimeRoot, { recursive: true })
-run(pnpm, ['--filter', '@deepseek-ai/dsh', 'deploy', '--prod', '--legacy', runtimeRoot], upstreamRoot)
+run(pnpm, ['--filter', '@deepseek-ai/dsh', 'deploy', '--prod', '--legacy', '--force', runtimeRoot], upstreamRoot)
 
 // dsh-app-boot imports this peer at runtime, but the current CLI manifest only
 // reaches it through the workspace's dev dependency graph. Keep the deployed
