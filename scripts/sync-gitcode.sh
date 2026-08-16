@@ -51,11 +51,19 @@ EOF
 chmod 700 "$ASKPASS_FILE"
 
 git_push() {
-  GIT_ASKPASS="$ASKPASS_FILE" \
-  GIT_TERMINAL_PROMPT=0 \
-  GITCODE_OWNER="$GITCODE_OWNER" \
-  GITCODE_TOKEN="$GITCODE_TOKEN" \
-  git push "${PUSH_OPTIONS[@]}" "$@"
+  if [ "${#PUSH_OPTIONS[@]}" -gt 0 ]; then
+    GIT_ASKPASS="$ASKPASS_FILE" \
+    GIT_TERMINAL_PROMPT=0 \
+    GITCODE_OWNER="$GITCODE_OWNER" \
+    GITCODE_TOKEN="$GITCODE_TOKEN" \
+    git push "${PUSH_OPTIONS[@]}" "$@"
+  else
+    GIT_ASKPASS="$ASKPASS_FILE" \
+    GIT_TERMINAL_PROMPT=0 \
+    GITCODE_OWNER="$GITCODE_OWNER" \
+    GITCODE_TOKEN="$GITCODE_TOKEN" \
+    git push "$@"
+  fi
 }
 
 echo "同步源码: ${GITCODE_URL} (${GITCODE_BRANCH})"
