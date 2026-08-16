@@ -13,7 +13,7 @@
 | 源码仓库 | [diamondfsd/deepseek-harness-desktop](https://github.com/diamondfsd/deepseek-harness-desktop) | [diamondfsd/deepseek-harness-desktop](https://gitcode.com/diamondfsd/deepseek-harness-desktop) |
 | 桌面版 Release | [GitHub Releases](https://github.com/diamondfsd/deepseek-harness-desktop/releases) | [GitCode Releases](https://gitcode.com/diamondfsd/deepseek-harness-desktop/releases) |
 
-GitHub 适合海外用户和开发协作；GitCode 适合中国大陆用户下载源码和安装包。两边的 `main` 分支由 `pnpm run sync:gitcode` 保持同步，安装包发布到两边对应的 Release。
+GitHub 适合海外用户和开发协作；GitCode 适合中国大陆用户下载源码和安装包。两边的 `main` 分支由 `pnpm run sync:gitcode` 保持同步；GitHub 安装包沿用 Actions 发布，GitCode 安装包使用下方的本地发布命令上传。
 
 ## 相关链接
 
