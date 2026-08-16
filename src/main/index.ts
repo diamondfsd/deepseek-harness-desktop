@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, shell } from 'electron'
+import { app, BrowserWindow, dialog, Menu, shell } from 'electron'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { join } from 'node:path'
 
@@ -152,7 +152,10 @@ async function boot(): Promise<void> {
   }
 }
 
-app.whenReady().then(boot).catch(error => {
+app.whenReady().then(() => {
+  if (process.platform === 'win32') Menu.setApplicationMenu(null)
+  return boot()
+}).catch(error => {
   const message = error instanceof Error ? error.message : String(error)
   void dialog.showErrorBox('DeepSeek Harness failed to start', message)
   app.quit()

@@ -8,6 +8,15 @@ const upstreamRoot = resolve(process.env.DSH_REPO ?? join(projectRoot, '..', 'de
 const runtimeRoot = join(projectRoot, 'runtime')
 const upstreamTsdownConfig = join(projectRoot, 'scripts', 'upstream-tsdown.config.mjs')
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+const targetPlatform = process.env.DSH_TARGET_PLATFORM ?? process.platform
+const targetArch = process.env.DSH_TARGET_ARCH ?? process.arch
+
+if (!['darwin', 'linux', 'win32'].includes(targetPlatform)) {
+  throw new Error(`unsupported desktop target platform: ${targetPlatform}`)
+}
+if (!['arm64', 'ia32', 'x64'].includes(targetArch)) {
+  throw new Error(`unsupported desktop target architecture: ${targetArch}`)
+}
 
 function run(command, args, cwd, env = process.env) {
   const result = spawnSync(command, args, {
@@ -148,6 +157,7 @@ function copyMaterializedTree(source, target) {
     filter: path => {
       const relativePath = relative(source, path)
       if (relativePath === '') return true
+      if (path.endsWith('.pdb')) return false
       return relativePath.split(sep)[0] !== 'node_modules'
     },
   })
@@ -188,6 +198,68 @@ function materializeRuntime() {
 
 materializeRuntime()
 
+function platformVariant(name) {
+  const match = name.match(/(?:^|-)(darwin|linuxmusl|linux|win32|freebsd|openbsd|android)(?:[-_](arm64|arm|ia32|x64|x86_64|riscv64|s390x|ppc64|loong64|wasm32))?(?:$|-)/)
+  if (match === null) return undefined
+  const arch = match[2] === 'x86_64' ? 'x64' : match[2]
+  return { platform: match[1] === 'linuxmusl' ? 'linuxmusl' : match[1], arch }
+}
+
+function isTargetVariant(variant) {
+  if (variant === undefined) return true
+  if (variant.platform !== targetPlatform) return false
+  return variant.arch === undefined || variant.arch === targetArch
+}
+
+function pruneOptionalPlatformPackages() {
+  const modulesRoot = join(runtimeRoot, 'node_modules')
+  for (const scopeEntry of readdirSync(modulesRoot, { withFileTypes: true })) {
+    const scopeRoot = scopeEntry.name.startsWith('@')
+      ? join(modulesRoot, scopeEntry.name)
+      : modulesRoot
+    const packageEntries = scopeEntry.name.startsWith('@')
+      ? readdirSync(scopeRoot, { withFileTypes: true })
+      : [scopeEntry]
+    for (const packageEntry of packageEntries) {
+      if (!packageEntry.isDirectory()) continue
+      const packageRoot = join(scopeRoot, packageEntry.name)
+      const manifestPath = join(packageRoot, 'package.json')
+      if (!existsSync(manifestPath)) continue
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      const variant = typeof manifest.name === 'string' ? platformVariant(manifest.name) : undefined
+      if (variant !== undefined && !isTargetVariant(variant)) rmSync(packageRoot, { recursive: true, force: true })
+    }
+  }
+
+  const nodePtyRoot = join(modulesRoot, 'node-pty')
+  const prebuildsRoot = join(nodePtyRoot, 'prebuilds')
+  if (existsSync(prebuildsRoot)) {
+    for (const entry of readdirSync(prebuildsRoot, { withFileTypes: true })) {
+      const variant = platformVariant(entry.name)
+      if (variant !== undefined && !isTargetVariant(variant)) rmSync(join(prebuildsRoot, entry.name), { recursive: true, force: true })
+    }
+  }
+
+  const conptyRoot = join(nodePtyRoot, 'third_party', 'conpty')
+  if (existsSync(conptyRoot)) {
+    if (targetPlatform !== 'win32') {
+      rmSync(conptyRoot, { recursive: true, force: true })
+    } else {
+      for (const version of readdirSync(conptyRoot, { withFileTypes: true })) {
+        if (!version.isDirectory()) continue
+        for (const entry of readdirSync(join(conptyRoot, version.name), { withFileTypes: true })) {
+          if (entry.name.startsWith('win10-') && entry.name.slice('win10-'.length) !== targetArch) {
+            rmSync(join(conptyRoot, version.name, entry.name), { recursive: true, force: true })
+          }
+        }
+      }
+    }
+  }
+}
+
+pruneOptionalPlatformPackages()
+console.log(`desktop: packaged runtime target ${targetPlatform}-${targetArch}`)
+
 const runtimeEntry = `import { lstat, mkdir, readFile, readdir, readlink, symlink, unlink } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -205,7 +277,7 @@ async function linkRuntimeModule(source, target) {
   } catch (error) {
     if (error?.code !== 'ENOENT') throw error
   }
-  await symlink(source, target)
+  await symlink(source, target, process.platform === 'win32' ? 'junction' : 'dir')
 }
 
 async function exposeRuntimeModules(dshHome) {

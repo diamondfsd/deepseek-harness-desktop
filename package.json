@@ -13,11 +13,11 @@
     "dev": "pnpm run prepare:runtime && electron-vite dev",
     "build": "pnpm run prepare:runtime && electron-vite build",
     "generate:icon": "node scripts/generate-icon.mjs",
-    "package": "pnpm run generate:icon && pnpm run build && electron-builder",
-    "package:dir": "pnpm run generate:icon && pnpm run build && electron-builder --dir",
-    "package:mac": "pnpm run generate:icon && pnpm run build && electron-builder --mac",
-    "package:win": "pnpm run generate:icon && pnpm run build && electron-builder --win",
-    "package:linux": "pnpm run generate:icon && pnpm run build && electron-builder --linux",
+    "package": "node scripts/package.mjs",
+    "package:dir": "node scripts/package.mjs --dir",
+    "package:mac": "node scripts/package.mjs --mac",
+    "package:win": "node scripts/package.mjs --win --x64",
+    "package:linux": "node scripts/package.mjs --linux",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
     "sync": "node scripts/sync-upstream.mjs",
     "update": "node scripts/update-upstream.mjs"
@@ -47,6 +47,7 @@
       }
     ],
     "mac": {
+      "identity": null,
       "category": "public.app-category.developer-tools",
       "icon": "build/icon.icns",
       "target": [
@@ -58,6 +59,14 @@
       "target": [
         "nsis"
       ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "runAfterFinish": false
     },
     "linux": {
       "category": "Development",
