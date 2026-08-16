@@ -56,40 +56,64 @@ function workspacePackageDirs() {
   return packageDirs.filter(dir => existsSync(join(dir, 'package.json')))
 }
 
+function workspaceFilterArgs() {
+  return workspacePackageDirs().flatMap(dir => {
+    const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
+    return typeof manifest.name === 'string' ? ['--filter', manifest.name] : []
+  })
+}
+
+function workspaceFilterBatches(filters) {
+  if (process.platform !== 'win32') return [filters]
+
+  const maxCommandLength = 6000
+  const batches = []
+  let batch = []
+  let length = 0
+  for (let index = 0; index < filters.length; index += 2) {
+    const pair = filters.slice(index, index + 2)
+    const pairLength = pair.reduce((total, argument) => total + argument.length + 1, 0)
+    if (batch.length > 0 && length + pairLength > maxCommandLength) {
+      batches.push(batch)
+      batch = []
+      length = 0
+    }
+    batch.push(...pair)
+    length += pairLength
+  }
+  if (batch.length > 0) batches.push(batch)
+  return batches
+}
+
 assertUpstream()
 console.log(`desktop: building upstream ${upstreamRoot}`)
 // Keep optional native packages for every target platform because one runtime
 // tree is reused to produce the macOS, Windows, and Linux installers.
 run(pnpm, ['install', '--frozen-lockfile', '--force'], upstreamRoot)
 const buildEnvironment = { ...process.env, DSH_REPO: upstreamRoot }
-// tsdown's workspace config already defines the complete package set. Keep an
-// explicit all-config filter, but do not expand every package name into CLI
-// arguments: Windows rejects the resulting command once the workspace grows.
-const filters = ['--filter', '/.*/']
+const filters = workspaceFilterArgs()
+const filterBatches = workspaceFilterBatches(filters)
+
+function buildTsdown(face) {
+  for (const batch of filterBatches) {
+    run(pnpm, [
+      'exec',
+      'tsdown',
+      '--config',
+      upstreamTsdownConfig,
+      '--config-loader',
+      'native',
+      '--env.DSH_BUILD_FACE',
+      face,
+      ...batch,
+    ], upstreamRoot, { ...buildEnvironment, DSH_BUILD_FACE: face })
+  }
+}
+
 run(pnpm, ['exec', 'tsc', '-b', 'tsconfig.host.json'], upstreamRoot)
-run(pnpm, [
-  'exec',
-  'tsdown',
-  '--config',
-  upstreamTsdownConfig,
-  '--config-loader',
-  'native',
-  '--env.DSH_BUILD_FACE',
-  'host',
-  ...filters,
-], upstreamRoot, { ...buildEnvironment, DSH_BUILD_FACE: 'host' })
+buildTsdown('host')
 run(pnpm, ['exec', 'tsc', '-b', 'tsconfig.client.json'], upstreamRoot)
-run(pnpm, [
-  'exec',
-  'tsdown',
-  '--config',
-  upstreamTsdownConfig,
-  '--config-loader',
-  'native',
-  '--env.DSH_BUILD_FACE',
-  'client',
-  ...filters,
-], upstreamRoot, { ...buildEnvironment, DSH_BUILD_FACE: 'client' })
+buildTsdown('client')
 run(pnpm, ['--filter', '@deepseek-ai/dsh-web-frontend', 'run', 'build'], upstreamRoot)
 
 rmSync(runtimeRoot, { recursive: true, force: true })
