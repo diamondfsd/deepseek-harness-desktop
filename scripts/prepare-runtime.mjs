@@ -66,7 +66,8 @@ function workspaceFilterArgs() {
 function workspaceFilterBatches(filters) {
   if (process.platform !== 'win32') return [filters]
 
-  const maxCommandLength = 6000
+  // pnpm.cmd and cmd.exe add their own command-line overhead on Windows.
+  const maxCommandLength = 2000
   const batches = []
   let batch = []
   let length = 0
