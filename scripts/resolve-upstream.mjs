@@ -40,14 +40,17 @@ export function resolveUpstreamRoot() {
     return root
   }
 
-  const siblingRoot = resolve(projectRoot, '..', 'deepseek-harness')
-  if (isUpstreamCheckout(siblingRoot)) return siblingRoot
-
   const cacheRoot = resolve(
     process.env.DSH_REPO_CACHE?.trim() || join(homedir(), '.cache', 'deepseek-harness-desktop', 'deepseek-harness'),
   )
   const repoUrl = process.env.DSH_REPO_URL?.trim() || defaultRepoUrl
   const repoRef = process.env.DSH_REPO_REF?.trim() || defaultRepoRef
+
+  const siblingRoot = resolve(projectRoot, '..', 'deepseek-harness')
+  const hasExplicitCacheConfig = Boolean(
+    process.env.DSH_REPO_CACHE?.trim() || process.env.DSH_REPO_URL?.trim() || process.env.DSH_REPO_REF?.trim(),
+  )
+  if (!hasExplicitCacheConfig && isUpstreamCheckout(siblingRoot)) return siblingRoot
 
   if (!existsSync(cacheRoot)) {
     mkdirSync(dirname(cacheRoot), { recursive: true })

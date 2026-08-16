@@ -4,6 +4,17 @@
 
 本项目只负责桌面窗口、运行时部署和安装包生成，DeepSeek Harness 的核心功能及 Web UI 仍以主仓库为准。
 
+## 仓库地址
+
+当前桌面项目在 GitHub 和 GitCode 维护同一份源码，用户可以按网络环境选择：
+
+| 内容 | GitHub | GitCode 国内镜像 |
+|------|--------|----------------|
+| 源码仓库 | [diamondfsd/deepseek-harness-desktop](https://github.com/diamondfsd/deepseek-harness-desktop) | [diamondfsd/deepseek-harness-desktop](https://gitcode.com/diamondfsd/deepseek-harness-desktop) |
+| 桌面版 Release | [GitHub Releases](https://github.com/diamondfsd/deepseek-harness-desktop/releases) | [GitCode Releases](https://gitcode.com/diamondfsd/deepseek-harness-desktop/releases) |
+
+GitHub 适合海外用户和开发协作；GitCode 适合中国大陆用户下载源码和安装包。两边的 `main` 分支由 `pnpm run sync:gitcode` 保持同步，安装包发布到两边对应的 Release。
+
 ## 相关链接
 
 - [DeepSeek Harness 主仓库](https://github.com/deepseek-ai/deepseek-harness)
@@ -42,7 +53,6 @@ DSH_REPO_URL=https://github.com/deepseek-ai/deepseek-harness.git DSH_REPO_REF=ma
 ## 开发和打包
 
 ```sh
-cd ~/projects/deepseek-harness-desktop
 pnpm install
 pnpm run dev
 ```
@@ -89,7 +99,6 @@ Windows 和 Linux 请分别执行 `pnpm run package:win` 或 `pnpm run package:l
 推荐使用一条命令拉取主仓库的最新提交并重新打包：
 
 ```sh
-cd ~/projects/deepseek-harness-desktop
 pnpm run update
 ```
 
@@ -111,7 +120,7 @@ pnpm run sync
 
 ## 发布到 GitCode
 
-本地发布命令会先构建当前平台安装包，再创建或复用 GitCode Release，上传 `release/` 中的安装包，并更新镜像仓库 README：
+本地发布命令会先构建当前平台安装包，再创建或复用 GitCode Release 并上传 `release/` 中的安装包；源码 README 随 `sync:gitcode` 一起同步，不会被发布脚本单独改写：
 
 ```sh
 pnpm run deploy:gitcode -- --target mac
@@ -126,7 +135,7 @@ pnpm run sync:gitcode
 pnpm run deploy:gitcode -- --target mac
 ```
 
-`sync:gitcode` 只推送已提交的当前分支和 tags；工作区存在未提交改动时会停止，避免 GitHub 和 GitCode 的源码状态不一致。首次使用时，请先在 GitCode 创建 `deepseek-harness-desktop` 空仓库，再执行同步命令。
+`sync:gitcode` 只推送已提交的当前分支和 tags；工作区存在未提交改动时会停止，避免 GitHub 和 GitCode 的源码状态不一致。首次使用时，请先在 GitCode 创建 `deepseek-harness-desktop` 空仓库，再执行同步命令。只有在 GitCode 仓库被单独改动、需要重新对齐到 GitHub 时才使用 `pnpm run sync:gitcode -- --force`。
 
 ## 许可
 

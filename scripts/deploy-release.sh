@@ -106,10 +106,6 @@ json_value() {
   ' "$json" "$@"
 }
 
-urlencode() {
-  node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$1"
-}
-
 file_size() {
   stat -f%z "$1" 2>/dev/null || stat -c%s "$1"
 }
@@ -261,45 +257,5 @@ for filepath in "${FILES[@]}"; do
   fi
   echo "上传完成: ${filename}"
 done
-
-release_json="$(curl -sS --fail -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" "${API_BASE}/releases/tags/${TAG}")"
-readme_body="$(printf '# DeepSeek Harness Desktop - 国内下载镜像\n\n本仓库用于托管 [DeepSeek Harness Desktop](https://github.com/%s) 的构建产物，方便国内用户下载。\n\n## %s\n\n' "$GITHUB_REPO" "$TAG")"
-for filepath in "${FILES[@]}"; do
-  filename="$(basename "$filepath")"
-  encoded_name="$(urlencode "$filename")"
-  case "$filename" in
-    *.dmg|*.zip) platform='macOS' ;;
-    *.exe) platform='Windows' ;;
-    *.AppImage|*.appimage|*.deb) platform='Linux' ;;
-    *) platform='其他' ;;
-  esac
-  readme_body+="$(printf -- '- %s: [%s](%s/%s/%s)\n' "$platform" "$filename" "$DOWNLOAD_BASE" "$TAG" "$encoded_name")"
-done
-readme_body+="$(printf '\n源代码与更新说明：[GitHub Releases](https://github.com/%s/releases)\n' "$GITHUB_REPO")"
-
-readme_file="$(mktemp "${TMPDIR:-/tmp}/gitcode-readme.XXXXXX")"
-readme_status="$(curl -sS -o "$readme_file" -w '%{http_code}' \
-  -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" "${API_BASE}/contents/README.md")" || true
-readme_sha=''
-if [ "$readme_status" = 200 ]; then
-  readme_sha="$(json_value "$(<"$readme_file")" sha)"
-fi
-content_b64="$(printf '%s' "$readme_body" | base64 | tr -d '\n')"
-readme_payload="$(node -e '
-  const [message, content, sha] = process.argv.slice(1)
-  const payload = { message, content }
-  if (sha) payload.sha = sha
-  process.stdout.write(JSON.stringify(payload))
-' "chore: update download links for ${TAG}" "$content_b64" "$readme_sha")"
-readme_update_status="$(curl -sS -o /dev/null -w '%{http_code}' -X PUT "${API_BASE}/contents/README.md" \
-  -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" \
-  -H 'Content-Type: application/json' \
-  --data "$readme_payload")" || true
-rm -f "$readme_file"
-if [[ "$readme_update_status" == 2* ]]; then
-  echo 'GitCode README 已更新。'
-else
-  echo "警告: GitCode README 更新失败 (HTTP ${readme_update_status})，不影响安装包上传。" >&2
-fi
 
 echo "发布完成: ${DOWNLOAD_BASE}/${TAG}/"
