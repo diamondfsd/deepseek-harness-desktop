@@ -1,0 +1,9 @@
+# GitCode Personal Access Token（必填）
+GITCODE_TOKEN=replace_with_your_token
+
+# 新建的 GitCode 镜像仓库
+GITCODE_OWNER=diamondfsd
+GITCODE_REPO=deepseek-harness-desktop
+
+# GitHub 源仓库，仅用于 Release 说明和镜像 README 链接
+GITHUB_REPO=diamondfsd/deepseek-harness-desktop

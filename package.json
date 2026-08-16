@@ -18,6 +18,8 @@
     "package:mac": "node scripts/package.mjs --mac",
     "package:win": "node scripts/package.mjs --win --x64",
     "package:linux": "node scripts/package.mjs --linux",
+    "deploy:gitcode": "bash scripts/deploy-release.sh",
+    "sync:gitcode": "bash scripts/sync-gitcode.sh",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
     "sync": "node scripts/sync-upstream.mjs",
     "update": "node scripts/update-upstream.mjs"

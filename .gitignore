@@ -2,5 +2,8 @@ node_modules/
 .DS_Store
 out/
 release*/
+
+# Local GitCode deploy credentials
+scripts/deploy-release.conf
 runtime/
 *.log

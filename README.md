@@ -22,16 +22,22 @@
 - Node.js `>=22.12.0`
 - pnpm `11`
 
-## 项目目录
+## 上游仓库获取
 
-默认情况下，桌面项目和主仓库放在同一个目录下：
+构建不依赖任何特定用户的本地目录。上游仓库按以下顺序解析：
 
-```text
-~/projects/deepseek-harness/
-~/projects/deepseek-harness-desktop/
+1. 如果设置了 `DSH_REPO`，使用指定的本地 checkout。
+2. 如果项目旁边存在合法的 `deepseek-harness` checkout，复用它。
+3. 否则自动从国内 GitCode 镜像以 `depth=1` 克隆到用户缓存目录 `~/.cache/deepseek-harness-desktop/deepseek-harness`。
+
+默认上游地址是 `https://gitcode.com/gh_mirrors/de/deepseek-harness.git`。可以用环境变量覆盖：
+
+```sh
+DSH_REPO=/path/to/deepseek-harness pnpm run package:mac
+DSH_REPO_URL=https://github.com/deepseek-ai/deepseek-harness.git DSH_REPO_REF=master pnpm run package:mac
 ```
 
-桌面项目会从 `~/projects/deepseek-harness` 构建当前版本的运行时。也可以通过 `DSH_REPO` 指定其他主仓库路径。
+构建过程中会在上游 checkout 内安装依赖并构建运行时；首次构建需要网络访问 GitCode，之后复用缓存。运行 `pnpm run update` 会对当前解析到的上游 checkout 执行快进更新后重新打包。
 
 ## 开发和打包
 
@@ -102,6 +108,25 @@ pnpm run sync
 ```
 
 主版本、功能和兼容性以 [DeepSeek Harness 主仓库](https://github.com/deepseek-ai/deepseek-harness) 的版本和发布说明为准。桌面项目的 `version` 只控制安装包版本，不代表独立的 Harness 功能版本；每次主仓库更新后都应重新执行 `pnpm run update` 并重新分发安装包。
+
+## 发布到 GitCode
+
+本地发布命令会先构建当前平台安装包，再创建或复用 GitCode Release，上传 `release/` 中的安装包，并更新镜像仓库 README：
+
+```sh
+pnpm run deploy:gitcode -- --target mac
+```
+
+可选目标为 `win`、`linux` 和 `all`。GitCode 配置放在被忽略的 `scripts/deploy-release.conf` 中，可参考 `scripts/deploy-release.conf.example`；也可以使用 `GITCODE_CONFIG_FILE` 指向其他配置文件。默认镜像仓库为 `diamondfsd/deepseek-harness-desktop`。
+
+将当前源码仓库同步到同一个 GitCode 仓库：
+
+```sh
+pnpm run sync:gitcode
+pnpm run deploy:gitcode -- --target mac
+```
+
+`sync:gitcode` 只推送已提交的当前分支和 tags；工作区存在未提交改动时会停止，避免 GitHub 和 GitCode 的源码状态不一致。首次使用时，请先在 GitCode 创建 `deepseek-harness-desktop` 空仓库，再执行同步命令。
 
 ## 许可
 

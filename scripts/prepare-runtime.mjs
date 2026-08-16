@@ -2,9 +2,10 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, r
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { resolveUpstreamRoot } from './resolve-upstream.mjs'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const upstreamRoot = resolve(process.env.DSH_REPO ?? join(projectRoot, '..', 'deepseek-harness'))
+const upstreamRoot = resolveUpstreamRoot()
 const runtimeRoot = join(projectRoot, 'runtime')
 const upstreamTsdownConfig = join(projectRoot, 'scripts', 'upstream-tsdown.config.mjs')
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
