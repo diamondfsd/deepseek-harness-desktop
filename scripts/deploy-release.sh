@@ -22,7 +22,7 @@ usage() {
   pnpm run deploy:gitcode -- [选项]
 
 选项:
-  --target mac|win|linux|all  本地构建的平台，默认 mac
+  --target mac|win|mac-win|linux|all  本地构建的平台，macOS 默认 mac-win
   --mac / --win / --linux    平台快捷参数
   --tag v0.1.0               GitCode Release tag，默认取 package.json 版本
   --notes-file FILE          Release 发布说明文件
@@ -48,6 +48,7 @@ while (($# > 0)); do
     --target=*) TARGET="${1#*=}"; shift ;;
     --mac) TARGET=mac; shift ;;
     --win) TARGET=win; shift ;;
+    --mac-win) TARGET=mac-win; shift ;;
     --linux) TARGET=linux; shift ;;
     --all) TARGET=all; shift ;;
     --tag)
@@ -70,13 +71,13 @@ done
 
 if [ -z "$TARGET" ]; then
   case "$(uname -s)" in
-    Darwin) TARGET=mac ;;
+    Darwin) TARGET=mac-win ;;
     Linux) TARGET=linux ;;
     *) TARGET=mac ;;
   esac
 fi
 case "$TARGET" in
-  mac|win|linux|all) ;;
+  mac|win|mac-win|linux|all) ;;
   *) echo "不支持的构建目标: $TARGET" >&2; exit 2 ;;
 esac
 
@@ -130,7 +131,7 @@ asset_exists() {
 artifact_matches_target() {
   local name="$1"
   case "$TARGET:$name" in
-    mac:*.dmg|mac:*.zip|win:*.exe|linux:*.AppImage|linux:*.appimage|linux:*.deb|all:*.dmg|all:*.zip|all:*.exe|all:*.AppImage|all:*.appimage|all:*.deb)
+    mac:*.dmg|mac:*.zip|win:*.exe|mac-win:*.dmg|mac-win:*.zip|mac-win:*.exe|linux:*.AppImage|linux:*.appimage|linux:*.deb|all:*.dmg|all:*.zip|all:*.exe|all:*.AppImage|all:*.appimage|all:*.deb)
       return 0
       ;;
     *) return 1 ;;
@@ -165,6 +166,10 @@ if [ "$SKIP_BUILD" -eq 0 ]; then
   case "$TARGET" in
     mac) pnpm run package:mac ;;
     win) pnpm run package:win ;;
+    mac-win)
+      pnpm run package:mac
+      pnpm run package:win
+      ;;
     linux) pnpm run package:linux ;;
     all)
       pnpm run package:mac

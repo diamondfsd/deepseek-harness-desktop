@@ -123,16 +123,16 @@ pnpm run sync
 本地发布命令会先构建当前平台安装包，再创建或复用 GitCode Release 并上传 `release/` 中的安装包；源码 README 随 `sync:gitcode` 一起同步，不会被发布脚本单独改写：
 
 ```sh
-pnpm run deploy:gitcode -- --target mac
+pnpm run deploy:gitcode -- --target mac-win
 ```
 
-可选目标为 `win`、`linux` 和 `all`。GitCode 配置放在被忽略的 `scripts/deploy-release.conf` 中，可参考 `scripts/deploy-release.conf.example`；也可以使用 `GITCODE_CONFIG_FILE` 指向其他配置文件。默认镜像仓库为 `diamondfsd/deepseek-harness-desktop`。
+默认目标 `mac-win` 会本地构建 macOS ARM64 和 Windows x64，并一起上传到同一个 Release；也可以选择 `mac`、`win`、`linux` 或 `all`。GitCode 配置放在被忽略的 `scripts/deploy-release.conf` 中，可参考 `scripts/deploy-release.conf.example`；也可以使用 `GITCODE_CONFIG_FILE` 指向其他配置文件。默认镜像仓库为 `diamondfsd/deepseek-harness-desktop`。
 
 将当前源码仓库同步到同一个 GitCode 仓库：
 
 ```sh
 pnpm run sync:gitcode
-pnpm run deploy:gitcode -- --target mac
+pnpm run deploy:gitcode -- --target mac-win
 ```
 
 `sync:gitcode` 只推送已提交的当前分支和 tags；工作区存在未提交改动时会停止，避免 GitHub 和 GitCode 的源码状态不一致。首次使用时，请先在 GitCode 创建 `deepseek-harness-desktop` 空仓库，再执行同步命令。只有在 GitCode 仓库被单独改动、需要重新对齐到 GitHub 时才使用 `pnpm run sync:gitcode -- --force`。

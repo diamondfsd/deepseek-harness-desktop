@@ -56,20 +56,16 @@ function workspacePackageDirs() {
   return packageDirs.filter(dir => existsSync(join(dir, 'package.json')))
 }
 
-function workspaceFilterArgs() {
-  return workspacePackageDirs().flatMap(dir => {
-    const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
-    return typeof manifest.name === 'string' ? ['--filter', manifest.name] : []
-  })
-}
-
 assertUpstream()
 console.log(`desktop: building upstream ${upstreamRoot}`)
 // Keep optional native packages for every target platform because one runtime
 // tree is reused to produce the macOS, Windows, and Linux installers.
 run(pnpm, ['install', '--frozen-lockfile', '--force'], upstreamRoot)
 const buildEnvironment = { ...process.env, DSH_REPO: upstreamRoot }
-const filters = workspaceFilterArgs()
+// tsdown's workspace config already defines the complete package set. Keep an
+// explicit all-config filter, but do not expand every package name into CLI
+// arguments: Windows rejects the resulting command once the workspace grows.
+const filters = ['--filter', '/.*/']
 run(pnpm, ['exec', 'tsc', '-b', 'tsconfig.host.json'], upstreamRoot)
 run(pnpm, [
   'exec',
