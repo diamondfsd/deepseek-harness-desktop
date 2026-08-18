@@ -1,6 +1,6 @@
 {
   "name": "deepseek-harness-desktop",
-  "version": "0.1.0",
+  "version": "0.1.0-rc.7",
   "private": true,
   "description": "Desktop wrapper for the DeepSeek Harness Web application.",
   "type": "module",
@@ -20,6 +20,7 @@
     "package:linux": "node scripts/package.mjs --linux",
     "deploy:gitcode": "bash scripts/deploy-release.sh",
     "sync:gitcode": "bash scripts/sync-gitcode.sh",
+    "sync:version": "node scripts/sync-version.mjs",
     "prepare:runtime": "node scripts/prepare-runtime.mjs",
     "sync": "node scripts/sync-upstream.mjs",
     "update": "node scripts/update-upstream.mjs"

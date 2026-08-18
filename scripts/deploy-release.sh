@@ -24,7 +24,7 @@ usage() {
 选项:
   --target mac|win|mac-win|linux|all  本地构建的平台，macOS 默认 mac-win
   --mac / --win / --linux    平台快捷参数
-  --tag v0.1.0               GitCode Release tag，默认取 package.json 版本
+  --tag v<version>           GitCode Release tag，默认取 package.json 版本
   --notes-file FILE          Release 发布说明文件
   --skip-build               直接上传 release/ 中已有产物
   --help                     显示帮助
@@ -139,6 +139,10 @@ artifact_matches_target() {
 }
 
 PKG_VERSION="$(node -e "console.log(JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version)")"
+if [ "$SKIP_BUILD" -eq 0 ]; then
+  pnpm run sync:version
+  PKG_VERSION="$(node -e "console.log(JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version)")"
+fi
 TAG="${TAG_OVERRIDE:-v${PKG_VERSION}}"
 TAG="${TAG#v}"
 TAG="v${TAG}"

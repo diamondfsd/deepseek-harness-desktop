@@ -14,4 +14,5 @@ function run(command, args, cwd) {
 }
 
 run('git', ['pull', '--ff-only'], upstreamRoot)
+run(pnpm, ['run', 'sync:version'], projectRoot)
 run(pnpm, ['run', 'package'], projectRoot)

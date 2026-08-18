@@ -48,7 +48,7 @@ DSH_REPO=/path/to/deepseek-harness pnpm run package:mac
 DSH_REPO_URL=https://github.com/deepseek-ai/deepseek-harness.git DSH_REPO_REF=master pnpm run package:mac
 ```
 
-构建过程中会在上游 checkout 内安装依赖并构建运行时；首次构建需要网络访问 GitCode，之后复用缓存。运行 `pnpm run update` 会对当前解析到的上游 checkout 执行快进更新后重新打包。
+构建过程中会在上游 checkout 内安装依赖并构建运行时；首次构建需要网络访问 GitCode，之后复用缓存。运行 `pnpm run update` 会对当前解析到的上游 checkout 执行快进更新，将桌面包版本同步为上游 CLI 版本后重新打包。
 
 ## 开发和打包
 
@@ -77,14 +77,14 @@ Windows 和 Linux 请分别执行 `pnpm run package:win` 或 `pnpm run package:l
 
 仓库中的 `Release Desktop App` 工作流会从 DeepSeek Harness 主仓库读取 `apps/cli/package.json` 的版本，并分别构建 Windows x64、macOS Intel 和 macOS Apple Silicon 安装包，最后创建一个 GitHub Release。
 
-推送到 `main` 分支会自动运行工作流，并使用 GitHub Actions 的运行序号作为 `build.n`。例如上游版本为 `0.1.0-rc.5`，第 `3` 次运行会生成 `0.1.0-rc.5-build.3` / `v0.1.0-rc.5-build.3`。
+推送到 `main` 分支会自动运行工作流，并使用 GitHub Actions 的运行序号作为 `build.n`。例如上游版本为 `0.1.0-rc.N`，第 `3` 次运行会生成 `0.1.0-rc.N-build.3` / `v0.1.0-rc.N-build.3`。
 
 也可以在 GitHub 的 Actions 页面手动运行工作流：
 
 1. `upstream_ref` 填写主仓库分支或标签，默认是 `master`。
 2. `build_number` 可选；不填写时同样使用 GitHub Actions 运行序号。
 
-也可以直接推送 `v*` 标签触发发布，例如 `v0.1.0-rc.5-build.1`。这种方式会使用标签本身作为安装包版本。
+也可以直接推送 `v*` 标签触发发布，例如 `v0.1.0-rc.N-build.1`。这种方式会使用标签本身作为安装包版本。
 
 ## Listen 和数据目录
 
@@ -116,11 +116,17 @@ DSH_REPO=/path/to/deepseek-harness pnpm run update
 pnpm run sync
 ```
 
+只同步桌面包版本而不构建：
+
+```sh
+pnpm run sync:version
+```
+
 主版本、功能和兼容性以 [DeepSeek Harness 主仓库](https://github.com/deepseek-ai/deepseek-harness) 的版本和发布说明为准。桌面项目的 `version` 只控制安装包版本，不代表独立的 Harness 功能版本；每次主仓库更新后都应重新执行 `pnpm run update` 并重新分发安装包。
 
 ## 发布到 GitCode
 
-本地发布命令会先构建当前平台安装包，再创建或复用 GitCode Release 并上传 `release/` 中的安装包；源码 README 随 `sync:gitcode` 一起同步，不会被发布脚本单独改写：
+本地发布命令会先从当前上游 checkout 同步桌面包版本，再构建当前平台安装包，最后创建或复用 GitCode Release 并上传 `release/` 中的安装包；源码 README 随 `sync:gitcode` 一起同步，不会被发布脚本单独改写：
 
 ```sh
 pnpm run deploy:gitcode -- --target mac-win
