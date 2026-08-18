@@ -6,8 +6,7 @@ release*/
 # Local GitCode deploy credentials
 scripts/deploy-release.conf
 
-# Generated raster icon; source asset is the SVG
-assets/deepseek-harness-icon.png
+# Keep the generated raster icon in version control for builds without SVG tools.
 runtime/
 runtime.tar.gz
 *.log

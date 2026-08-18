@@ -1,10 +1,10 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, rmSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const source = join(root, 'assets', 'deepseek-harness-icon.svg')
+const source = join(root, 'assets', 'deepseek-harness-icon.png')
 const build = join(root, 'build')
 const png = join(build, 'icon.png')
 const iconset = join(build, 'icon.iconset')
@@ -14,7 +14,10 @@ function run(command, args) {
 }
 
 mkdirSync(build, { recursive: true })
-run('rsvg-convert', ['--width', '1024', '--height', '1024', '--output', png, source])
+if (!existsSync(source)) {
+  throw new Error(`committed icon is missing: ${source}`)
+}
+copyFileSync(source, png)
 
 if (process.platform === 'darwin') {
   rmSync(iconset, { recursive: true, force: true })
@@ -31,12 +34,7 @@ if (process.platform === 'darwin') {
     ['icon_512x512.png', 512],
     ['icon_512x512@2x.png', 1024],
   ]) {
-    run('rsvg-convert', [
-      '--width', String(size),
-      '--height', String(size),
-      '--output', join(iconset, name),
-      source,
-    ])
+    run('sips', ['-z', String(size), String(size), png, '--out', join(iconset, name)])
   }
   run('iconutil', ['--convert', 'icns', '--output', join(build, 'icon.icns'), iconset])
   rmSync(iconset, { recursive: true, force: true })
