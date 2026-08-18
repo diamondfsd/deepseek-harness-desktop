@@ -25,9 +25,14 @@ const env = {
   ...process.env,
   DSH_TARGET_PLATFORM: target.platform,
   DSH_TARGET_ARCH: target.arch,
+  DSH_SKIP_RUNTIME_ARCHIVE: 'true',
   CSC_IDENTITY_AUTO_DISCOVERY: 'false',
 }
 
-run(pnpm, ['run', 'generate:icon'], env)
+if (process.env.DSH_SKIP_ICON === 'true') {
+  console.log('desktop: skipped icon generation')
+} else {
+  run(pnpm, ['run', 'generate:icon'], env)
+}
 run(pnpm, ['run', 'build'], env)
 run(pnpm, ['exec', 'electron-builder', ...args], env)

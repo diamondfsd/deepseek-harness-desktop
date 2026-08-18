@@ -122,7 +122,10 @@ run(pnpm, ['--filter', '@deepseek-ai/dsh-web-frontend', 'run', 'build'], upstrea
 
 rmSync(runtimeRoot, { recursive: true, force: true })
 mkdirSync(runtimeRoot, { recursive: true })
-run(pnpm, ['--filter', '@deepseek-ai/dsh', 'deploy', '--prod', '--legacy', '--force', runtimeRoot], upstreamRoot)
+const deployArgs = ['--filter', '@deepseek-ai/dsh', 'deploy', '--prod', '--legacy', '--force']
+if (process.env.DSH_IGNORE_DEPLOY_SCRIPTS === 'true') deployArgs.push('--ignore-scripts')
+deployArgs.push(runtimeRoot)
+run(pnpm, deployArgs, upstreamRoot)
 
 // dsh-app-boot imports this peer at runtime, but the current CLI manifest only
 // reaches it through the workspace's dev dependency graph. Keep the deployed
@@ -130,7 +133,16 @@ run(pnpm, ['--filter', '@deepseek-ai/dsh', 'deploy', '--prod', '--legacy', '--fo
 const groupSource = join(upstreamRoot, 'vendor', 'group')
 const groupTarget = join(runtimeRoot, 'node_modules', '@deepseek-ai', 'cordis-plugin-group')
 mkdirSync(dirname(groupTarget), { recursive: true })
-cpSync(groupSource, groupTarget, { recursive: true, dereference: true })
+cpSync(groupSource, groupTarget, {
+  recursive: true,
+  dereference: true,
+  filter: path => {
+    const relativePath = relative(groupSource, path)
+    if (relativePath === '') return true
+    const firstSegment = relativePath.split(sep)[0]
+    return !['.git', 'node_modules', 'src', 'test', 'tests', '__tests__'].includes(firstSegment)
+  },
+})
 
 function copyWorkspacePackages() {
   for (const source of workspacePackageDirs()) {
@@ -155,6 +167,10 @@ function copyWorkspacePackages() {
 copyWorkspacePackages()
 
 function linkRuntimeDependencies() {
+  // The final materialization copies these dependencies from the pnpm virtual
+  // store, so extra symlinks are unnecessary on Windows where creating them
+  // requires Developer Mode or elevated privileges.
+  if (process.platform === 'win32') return
   const sourceRoot = join(runtimeRoot, 'node_modules', '.pnpm', 'node_modules')
   for (const entry of readdirSync(sourceRoot, { withFileTypes: true })) {
     if (entry.name.startsWith('.')) continue
@@ -455,5 +471,10 @@ async function archiveRuntime() {
   console.log(`desktop: archived runtime to ${archivePath}`)
 }
 
-await archiveRuntime()
+if (process.env.DSH_SKIP_RUNTIME_ARCHIVE === 'true') {
+  rmSync(join(projectRoot, 'runtime.tar.gz'), { force: true })
+  console.log('desktop: skipped legacy runtime archive')
+} else {
+  await archiveRuntime()
+}
 console.log(`desktop: prepared runtime at ${runtimeRoot}`)

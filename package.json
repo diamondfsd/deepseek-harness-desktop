@@ -36,8 +36,18 @@
     ],
     "extraResources": [
       {
-        "from": "runtime.tar.gz",
-        "to": "runtime.tar.gz"
+        "from": "runtime",
+        "to": "runtime",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "runtime/node_modules",
+        "to": "runtime/node_modules",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "mac": {

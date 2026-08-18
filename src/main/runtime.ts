@@ -106,6 +106,16 @@ async function extractRuntimeArchive(archivePath: string, targetRoot: string): P
 export async function ensureRuntimeRoot(): Promise<string> {
   if (!app.isPackaged) return join(app.getAppPath(), 'runtime')
 
+  // New installers expand the runtime into resources during installation.
+  // Keep the archive path below as a compatibility fallback for older builds.
+  const packagedRuntimeRoot = join(process.resourcesPath, 'runtime')
+  try {
+    await stat(join(packagedRuntimeRoot, 'entry.mjs'))
+    return packagedRuntimeRoot
+  } catch {
+    // Fall back to extracting legacy runtime.tar.gz into userData.
+  }
+
   const archivePath = join(process.resourcesPath, 'runtime.tar.gz')
   const versionRoot = join(app.getPath('userData'), 'runtime', app.getVersion())
   try {
