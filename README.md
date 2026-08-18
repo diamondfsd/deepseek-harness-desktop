@@ -15,6 +15,16 @@
 
 GitHub 适合海外用户和开发协作；GitCode 适合中国大陆用户下载源码和安装包。两边的 `main` 分支由 `pnpm run sync:gitcode` 保持同步；GitHub 安装包沿用 Actions 发布，GitCode 安装包使用下方的本地发布命令上传。
 
+## 下载安装包
+
+当前 GitCode Release：`v0.1.0-rc.7`。中国大陆用户可以直接点击对应平台的下载按钮：
+
+<a href="https://gitcode.com/diamondfsd/deepseek-harness-desktop/releases/download/v0.1.0-rc.7/DeepSeek%20Harness%20Setup%200.1.0-rc.7.exe"><img alt="Windows x64 下载" src="https://img.shields.io/badge/Windows%20x64-下载-2ea44f?style=for-the-badge"></a>
+<a href="https://gitcode.com/diamondfsd/deepseek-harness-desktop/releases/download/v0.1.0-rc.7/DeepSeek%20Harness-0.1.0-rc.7-arm64.dmg"><img alt="macOS Apple Silicon 下载" src="https://img.shields.io/badge/macOS%20Apple%20Silicon-下载-2ea44f?style=for-the-badge"></a>
+<a href="https://gitcode.com/diamondfsd/deepseek-harness-desktop/releases"><img alt="查看全部 GitCode Release" src="https://img.shields.io/badge/GitCode-全部%20Release-0969da?style=for-the-badge"></a>
+
+如果直链对应的版本已更新，请从 [GitCode Releases](https://gitcode.com/diamondfsd/deepseek-harness-desktop/releases) 选择最新版本和对应文件。
+
 ## 相关链接
 
 - [DeepSeek Harness 主仓库](https://github.com/deepseek-ai/deepseek-harness)

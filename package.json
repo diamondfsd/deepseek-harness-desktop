@@ -28,6 +28,7 @@
   "build": {
     "appId": "ai.deepseek.harness.desktop",
     "productName": "DeepSeek Harness",
+    "compression": "store",
     "asar": true,
     "files": [
       "out/**/*",
@@ -35,18 +36,8 @@
     ],
     "extraResources": [
       {
-        "from": "runtime",
-        "to": "runtime",
-        "filter": [
-          "!node_modules{,/**/*}"
-        ]
-      },
-      {
-        "from": "runtime/node_modules",
-        "to": "runtime/node_modules",
-        "filter": [
-          "**/*"
-        ]
+        "from": "runtime.tar.gz",
+        "to": "runtime.tar.gz"
       }
     ],
     "mac": {
@@ -69,6 +60,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
+      "shortcutName": "DeepSeek Harness",
+      "include": "build/installer.nsh",
       "runAfterFinish": false
     },
     "linux": {

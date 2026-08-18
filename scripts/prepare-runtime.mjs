@@ -1,7 +1,10 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { createReadStream, createWriteStream, cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
+import { createGzip } from 'node:zlib'
 import { resolveUpstreamRoot } from './resolve-upstream.mjs'
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -360,4 +363,97 @@ export async function startDshWeb({ dshHome, cwd }) {
 
 writeFileSync(join(runtimeRoot, 'entry.mjs'), runtimeEntry)
 cpSync(join(projectRoot, 'scripts', 'runtime-worker.mjs'), join(runtimeRoot, 'worker.mjs'))
+
+function tarField(header, value, offset, length) {
+  const bytes = Buffer.from(value)
+  if (bytes.length > length) throw new Error(`runtime archive field is too long: ${value}`)
+  bytes.copy(header, offset)
+}
+
+function tarNumber(header, value, offset, length) {
+  const encoded = `${value.toString(8).padStart(length - 1, '0')}\0`
+  tarField(header, encoded, offset, length)
+}
+
+function tarPathParts(name) {
+  let namePart = name
+  let prefix = ''
+  if (Buffer.byteLength(namePart) > 100) {
+    const split = [...namePart.matchAll(/\//g)]
+      .map(match => match.index ?? -1)
+      .reverse()
+      .find(index => Buffer.byteLength(namePart.slice(index + 1)) <= 100 && Buffer.byteLength(namePart.slice(0, index)) <= 155)
+    if (split === undefined) return undefined
+    prefix = namePart.slice(0, split)
+    namePart = namePart.slice(split + 1)
+  }
+  return { namePart, prefix }
+}
+
+function tarHeader(name, size, type) {
+  const header = Buffer.alloc(512)
+  const parts = tarPathParts(name)
+  if (parts === undefined) throw new Error(`runtime archive path is too long: ${name}`)
+  const { namePart, prefix } = parts
+  tarField(header, namePart, 0, 100)
+  tarNumber(header, type === 0x35 ? 0o755 : 0o644, 100, 8)
+  tarNumber(header, 0, 108, 8)
+  tarNumber(header, 0, 116, 8)
+  tarNumber(header, size, 124, 12)
+  tarNumber(header, 0, 136, 12)
+  header.fill(0x20, 148, 156)
+  header[156] = type
+  tarField(header, prefix, 345, 155)
+  tarField(header, 'ustar\0', 257, 6)
+  tarField(header, '00', 263, 2)
+  const checksum = header.reduce((sum, byte) => sum + byte, 0)
+  tarField(header, `${checksum.toString(8).padStart(6, '0')}\0 `, 148, 8)
+  return header
+}
+
+function tarLongName(name) {
+  const value = Buffer.from(`${name}\0`)
+  const padding = (512 - (value.length % 512)) % 512
+  return [tarHeader('././@LongLink', value.length, 0x4c), value, Buffer.alloc(padding)]
+}
+
+async function* runtimeTarEntries(root, current = '') {
+  const directory = join(root, current)
+  for (const name of readdirSync(directory).sort()) {
+    const relativeName = current === '' ? name : `${current}/${name}`
+    const source = join(root, relativeName)
+    const stats = lstatSync(source)
+    if (stats.isSymbolicLink()) throw new Error(`runtime archive does not support symlinks: ${relativeName}`)
+    if (stats.isDirectory()) {
+      const archiveName = `${relativeName}/`
+      if (tarPathParts(archiveName) === undefined) yield* tarLongName(archiveName)
+      yield tarHeader(tarPathParts(archiveName) === undefined ? '././@LongLink' : archiveName, 0, 0x35)
+      yield* runtimeTarEntries(root, relativeName)
+      continue
+    }
+    if (!stats.isFile()) throw new Error(`runtime archive does not support file type: ${relativeName}`)
+    if (tarPathParts(relativeName) === undefined) yield* tarLongName(relativeName)
+    yield tarHeader(tarPathParts(relativeName) === undefined ? '././@LongLink' : relativeName, stats.size, 0x30)
+    for await (const chunk of createReadStream(source)) yield chunk
+    const padding = (512 - (stats.size % 512)) % 512
+    if (padding > 0) yield Buffer.alloc(padding)
+  }
+}
+
+async function archiveRuntime() {
+  const archivePath = join(projectRoot, 'runtime.tar.gz')
+  rmSync(archivePath, { force: true })
+  const trailer = Buffer.alloc(1024)
+  await pipeline(
+    Readable.from((async function* () {
+      yield* runtimeTarEntries(runtimeRoot)
+      yield trailer
+    })()),
+    createGzip({ level: 9 }),
+    createWriteStream(archivePath),
+  )
+  console.log(`desktop: archived runtime to ${archivePath}`)
+}
+
+await archiveRuntime()
 console.log(`desktop: prepared runtime at ${runtimeRoot}`)

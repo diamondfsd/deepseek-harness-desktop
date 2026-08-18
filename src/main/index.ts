@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, Menu, shell } from 'electron'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { join } from 'node:path'
+import { ensureRuntimeRoot } from './runtime'
 
 interface HarnessRuntime {
   url: string
@@ -11,17 +12,16 @@ let mainWindow: BrowserWindow | undefined
 let harness: HarnessRuntime | undefined
 let quitting = false
 
-function runtimeWorkerPath(): string {
-  return app.isPackaged
-    ? join(process.resourcesPath, 'runtime', 'worker.mjs')
-    : join(app.getAppPath(), 'runtime', 'worker.mjs')
+async function runtimeWorkerPath(): Promise<string> {
+  return join(await ensureRuntimeRoot(), 'worker.mjs')
 }
 
-function startHarness(): Promise<HarnessRuntime> {
+async function startHarness(): Promise<HarnessRuntime> {
+  const workerPath = await runtimeWorkerPath()
   const dshHome = join(app.getPath('userData'), 'harness')
   const child: ChildProcessWithoutNullStreams = spawn(process.execPath, [
     '--expose-internals',
-    runtimeWorkerPath(),
+    workerPath,
   ], {
     cwd: app.getPath('home'),
     env: {

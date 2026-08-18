@@ -9,4 +9,5 @@ scripts/deploy-release.conf
 # Generated raster icon; source asset is the SVG
 assets/deepseek-harness-icon.png
 runtime/
+runtime.tar.gz
 *.log
