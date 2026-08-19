@@ -24,7 +24,7 @@ usage() {
 选项:
   --target mac|win|mac-win|linux|all  本地构建的平台，macOS 默认 mac-win
   --mac / --win / --linux    平台快捷参数
-  --tag v<version>           GitCode Release tag，默认取 package.json 版本
+  --tag v<version>           GitCode Release tag，默认自动递增 -build.N
   --notes-file FILE          Release 发布说明文件
   --skip-build               直接上传 release/ 中已有产物
   --help                     显示帮助
@@ -143,9 +143,37 @@ if [ "$SKIP_BUILD" -eq 0 ]; then
   pnpm run sync:version
   PKG_VERSION="$(node -e "console.log(JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version)")"
 fi
-TAG="${TAG_OVERRIDE:-v${PKG_VERSION}}"
+
+next_build_number() {
+  local releases_json
+  releases_json="$(curl -sS --fail -H "PRIVATE-TOKEN: ${GITCODE_TOKEN}" "${API_BASE}/releases?per_page=100")"
+  node -e '
+    const [raw, baseVersion] = process.argv.slice(1)
+    const parsed = JSON.parse(raw)
+    const releases = Array.isArray(parsed) ? parsed : parsed.data ?? parsed.releases ?? []
+    const prefix = `v${baseVersion}-build.`
+    let max = 0
+    for (const release of releases) {
+      const tag = release.tag_name ?? release.tagName ?? release.tag
+      if (typeof tag !== "string" || !tag.startsWith(prefix)) continue
+      const value = Number(tag.slice(prefix.length))
+      if (Number.isSafeInteger(value) && value > max) max = value
+    }
+    process.stdout.write(String(max + 1))
+  ' "$releases_json" "$PKG_VERSION"
+}
+
+if [ -n "$TAG_OVERRIDE" ]; then
+  TAG="$TAG_OVERRIDE"
+elif [ "$SKIP_BUILD" -eq 0 ]; then
+  BUILD_NUMBER="$(next_build_number)"
+  TAG="v${PKG_VERSION}-build.${BUILD_NUMBER}"
+else
+  TAG="v${PKG_VERSION}"
+fi
 TAG="${TAG#v}"
 TAG="v${TAG}"
+BUILD_VERSION="${TAG#v}"
 
 if [ -z "$NOTES_FILE" ] && [ -f "${PROJECT_ROOT}/RELEASE_NOTES_${TAG}.md" ]; then
   NOTES_FILE="${PROJECT_ROOT}/RELEASE_NOTES_${TAG}.md"
@@ -168,17 +196,17 @@ if [ "$SKIP_BUILD" -eq 0 ]; then
     "${RELEASE_DIR}"/*.AppImage "${RELEASE_DIR}"/*.appimage "${RELEASE_DIR}"/*.deb 2>/dev/null || true
   touch "$BUILD_MARKER"
   case "$TARGET" in
-    mac) pnpm run package:mac ;;
-    win) pnpm run package:win ;;
+    mac) DSH_BUILD_VERSION="$BUILD_VERSION" pnpm run package:mac ;;
+    win) DSH_BUILD_VERSION="$BUILD_VERSION" pnpm run package:win ;;
     mac-win)
-      pnpm run package:mac
-      pnpm run package:win
+      DSH_BUILD_VERSION="$BUILD_VERSION" pnpm run package:mac
+      DSH_BUILD_VERSION="$BUILD_VERSION" pnpm run package:win
       ;;
-    linux) pnpm run package:linux ;;
+    linux) DSH_BUILD_VERSION="$BUILD_VERSION" pnpm run package:linux ;;
     all)
-      pnpm run package:mac
-      pnpm run package:win
-      pnpm run package:linux
+      DSH_BUILD_VERSION="$BUILD_VERSION" pnpm run package:mac
+      DSH_BUILD_VERSION="$BUILD_VERSION" pnpm run package:win
+      DSH_BUILD_VERSION="$BUILD_VERSION" pnpm run package:linux
       ;;
   esac
 fi

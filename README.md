@@ -144,6 +144,8 @@ pnpm run deploy:gitcode -- --target mac-win
 
 默认目标 `mac-win` 会本地构建 macOS ARM64 和 Windows x64，并一起上传到同一个 Release；也可以选择 `mac`、`win`、`linux` 或 `all`。GitCode 配置放在被忽略的 `scripts/deploy-release.conf` 中，可参考 `scripts/deploy-release.conf.example`；也可以使用 `GITCODE_CONFIG_FILE` 指向其他配置文件。默认镜像仓库为 `diamondfsd/deepseek-harness-desktop`。
 
+未指定 `--tag` 时，脚本会根据 GitCode 中已有的同版本 Release 自动选择下一个 `v<version>-build.N`，并将相同版本写入安装包。例如 `0.1.0-rc.7` 会生成 `v0.1.0-rc.7-build.1`。如需手动指定版本，可传入 `--tag v<version>-build.N`。
+
 将当前源码仓库同步到同一个 GitCode 仓库：
 
 ```sh

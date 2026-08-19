@@ -35,4 +35,9 @@ if (process.env.DSH_SKIP_ICON === 'true') {
   run(pnpm, ['run', 'generate:icon'], env)
 }
 run(pnpm, ['run', 'build'], env)
-run(pnpm, ['exec', 'electron-builder', ...args], env)
+const builderArgs = ['exec', 'electron-builder']
+if (process.env.DSH_BUILD_VERSION?.trim()) {
+  builderArgs.push(`--config.extraMetadata.version=${process.env.DSH_BUILD_VERSION.trim()}`)
+}
+builderArgs.push(...args)
+run(pnpm, builderArgs, env)
