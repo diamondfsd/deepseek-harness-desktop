@@ -10,7 +10,7 @@
 
 - The desktop package version must follow `apps/cli/package.json` in the resolved DeepSeek Harness upstream checkout.
 - Use `pnpm run sync:version` to synchronize only the desktop `package.json` version; this command does not build installers.
-- `pnpm run update` fast-forwards the upstream checkout, synchronizes the desktop version, and then packages the application. Use it for the normal upstream update flow.
+- `pnpm run update` fast-forwards the upstream checkout, synchronizes the desktop version, and then packages the application for the local host target. It is only the upstream update/build phase; use the dual-platform release flow below to complete an update.
 - `pnpm run deploy:gitcode` synchronizes the version before a build automatically. When using `--skip-build`, it uploads existing artifacts and does not change the version.
 - Do not manually edit the desktop version for a routine upstream release. If the upstream checkout cannot be resolved, configure `DSH_REPO`, `DSH_REPO_URL`, `DSH_REPO_REF`, or `DSH_REPO_CACHE` as documented below.
 
@@ -28,3 +28,12 @@
 - GitCode upstream cloning defaults to `https://gitcode.com/gh_mirrors/de/deepseek-harness.git` with `git clone --depth 1`. `DSH_REPO` can override it for a local checkout, while `DSH_REPO_URL`, `DSH_REPO_REF`, and `DSH_REPO_CACHE` can override the automatic cache.
 - `scripts/prepare-runtime.mjs` must keep the upstream tsdown package filters out of a single oversized Windows command line; preserve its platform-aware batching when updating the runtime build.
 - Keep macOS packaging unsigned: preserve `build.mac.identity: null` and `CSC_IDENTITY_AUTO_DISCOVERY=false` in every local and CI packaging path.
+
+## Update And Automatic Release
+
+- Any request to update DeepSeek Harness includes the complete release flow: fast-forward the upstream checkout, synchronize the version, build both macOS ARM64 DMG/ZIP and Windows x64 NSIS installers, then publish the successful build to GitCode.
+- After `pnpm run update` succeeds, run `pnpm run deploy:gitcode -- --target mac-win --tag v<version> --notes-file RELEASE_NOTES_v<version>.md`. This is the required dual-platform build-and-publish command for a normal domestic release.
+- Do not treat a plain `pnpm run update`, `pnpm run package`, or `pnpm run package:mac` as a completed release; those commands do not produce the required Windows installer and do not publish the release.
+- Publish only after both platform builds succeed. If either build fails, do not upload a partial release; fix the failure and rerun the dual-platform command.
+- After publishing, verify the GitCode Release contains the expected macOS DMG/ZIP and Windows x64 EXE assets, and verify the source mirror branch and release tag are synchronized.
+- GitHub publication remains CI-managed: commit and push source changes, then wait for the `Release Desktop App` workflow. Never manually upload local installers to GitHub.
